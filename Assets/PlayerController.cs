@@ -32,6 +32,10 @@ public class PlayerController : MonoBehaviour
     // UI显示相关变量
     public Text statusText; // 确保在Unity编辑器中将这个变量链接到显示状态的UI Text
 
+    // 金币收集变量
+    private int coinCount = 0; // 用于跟踪金币数量
+    public Text coinText; // 链接到UI上显示金币数量的Text组件
+
     // 用于在主线程上执行任务的队列
     private ConcurrentQueue<System.Action> tasks = new ConcurrentQueue<System.Action>();
 
@@ -63,23 +67,45 @@ public class PlayerController : MonoBehaviour
 
         if (currentMode != ControlMode.Manual || !isGestureControl)
         {
-            // 键盘控制
-            h = Input.GetAxis("Horizontal");
-            v = Input.GetAxis("Vertical");
-
             // 键盘模式切换
-            if (Input.GetKeyDown(KeyCode.Alpha1)) ProcessCommand("1");
-            if (Input.GetKeyDown(KeyCode.Alpha2)) ProcessCommand("2");
-            if (Input.GetKeyDown(KeyCode.Alpha3)) ProcessCommand("3");
-            if (Input.GetKeyDown(KeyCode.Alpha4)) ProcessCommand("4");
+            if (!isGestureControl)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1) && currentMode != ControlMode.Manual)
+                {
+                    currentMode = ControlMode.Autonomous;
+                    UpdateStatusText("自主模式");
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    currentMode = ControlMode.Idle;
+                    UpdateStatusText("待机状态");
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha3) && currentMode != ControlMode.Manual)
+                {
+                    currentMode = ControlMode.Follow;
+                    UpdateStatusText("跟随模式");
+                }
+                else if (Input.GetKeyDown(KeyCode.Alpha4) && currentMode == ControlMode.Idle)
+                {
+                    currentMode = ControlMode.Manual;
+                    UpdateStatusText("人控模式");
+                }
+            }
         }
     }
 
     void FixedUpdate()
     {
-        Vector3 force = new Vector3(h, 0, v);
-        force *= speed;
-        rb.AddForce(force);
+        if (currentMode == ControlMode.Manual && !isGestureControl)
+        {
+            // 键盘控制
+            h = Input.GetAxis("Horizontal");
+            v = Input.GetAxis("Vertical");
+
+            Vector3 force = new Vector3(h, 0, v);
+            force *= speed;
+            rb.AddForce(force);
+        }
     }
 
     void ListenForClients()
@@ -151,7 +177,7 @@ public class PlayerController : MonoBehaviour
                     case 2:
                         // 回到Idle模式
                         currentMode = ControlMode.Idle;
-                        UpdateStatusText("Idle");
+                        UpdateStatusText("待机状态");
                         break;
                     case 3:
                         // 跟随模式
@@ -179,6 +205,21 @@ public class PlayerController : MonoBehaviour
                 v = float.Parse(parts[2]);
             }
         }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("collections"))
+        {
+            coinCount++; // 增加金币数量
+            UpdateCoinText(); // 更新UI文本
+            Destroy(other.gameObject); // 销毁金币对象
+        }
+    }
+
+    private void UpdateCoinText()
+    {
+        coinText.text =  coinCount.ToString();
     }
 
 
