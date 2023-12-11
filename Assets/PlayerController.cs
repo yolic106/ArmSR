@@ -65,7 +65,7 @@ public class PlayerController : MonoBehaviour
             task();
         }
 
-        if (currentMode != ControlMode.Manual || !isGestureControl)
+        if (!isGestureControl)//if (currentMode != ControlMode.Manual && !isGestureControl)
         {
             // 键盘模式切换
             if (!isGestureControl)
@@ -199,7 +199,7 @@ public class PlayerController : MonoBehaviour
             }
 
             // 仅在人控模式下使用ax和ay的数据来控制机器人
-            if (currentMode == ControlMode.Manual && isGestureControl)
+            if (currentMode == ControlMode.Manual)
             {
                 h = float.Parse(parts[1]);
                 v = float.Parse(parts[2]);
@@ -219,7 +219,7 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateCoinText()
     {
-        coinText.text =  coinCount.ToString();
+        coinText.text = coinCount.ToString();
     }
 
 
