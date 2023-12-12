@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     float v;
     Rigidbody rb;
     public float speed;
+    public float handSpeed;
 
     // 网络通信相关变量
     TcpListener listener;
@@ -106,6 +107,12 @@ public class PlayerController : MonoBehaviour
             force *= speed;
             rb.AddForce(force);
         }
+        else if (currentMode == ControlMode.Manual && isGestureControl)
+        {
+            Vector3 force = new Vector3(h, 0, v);
+            force *= handSpeed;
+            rb.AddForce(force);
+        }
     }
 
     void ListenForClients()
@@ -163,9 +170,7 @@ public class PlayerController : MonoBehaviour
             {
                 switch (gestureCommand)
                 {
-                    case 0:
-                        // 无特定命令，可以根据需要处理
-                        break;
+                    
                     case 1:
                         // 自主模式
                         if (currentMode != ControlMode.Manual) // 非人控模式时可切换
@@ -201,8 +206,8 @@ public class PlayerController : MonoBehaviour
             // 仅在人控模式下使用ax和ay的数据来控制机器人
             if (currentMode == ControlMode.Manual)
             {
-                h = float.Parse(parts[1]);
-                v = float.Parse(parts[2]);
+                v = float.Parse(parts[1]);
+                h = float.Parse(parts[2]);
             }
         }
     }
