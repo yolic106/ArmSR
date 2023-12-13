@@ -15,6 +15,8 @@ public class PlayerController : MonoBehaviour
     Rigidbody rb;
     public float speed;
     public float handSpeed;
+    public Rigidbody headRigidbody; // 头部的Rigidbody
+    public Vector3 headOffset; // 头部相对于身体的偏移量
 
     // 网络通信相关变量
     TcpListener listener;
@@ -40,12 +42,25 @@ public class PlayerController : MonoBehaviour
     // 用于在主线程上执行任务的队列
     private ConcurrentQueue<System.Action> tasks = new ConcurrentQueue<System.Action>();
 
+    // 计时器等相关显示
+    private float gameStartTime;
+    private float firstMoveTime;
+    private float gameEndTime;
+    private bool gameStarted;
+    private bool gameEnded;
+    public Text timerText; // 链接到UI上显示计时器的Text组件
+    public Text endGameText; // 链接到UI上显示游戏结束信息的Text组件
+
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-
+        if (headRigidbody != null)
+        {
+            // 计算初始时头部与身体的偏移量
+            headOffset = headRigidbody.position - GetComponent<Rigidbody>().position;
+        }
         // 只有在手势控制模式下才初始化网络监听
         if (isGestureControl)
         {
@@ -55,11 +70,22 @@ public class PlayerController : MonoBehaviour
             listenerThread.IsBackground = true;
             listenerThread.Start();
         }
+        // 计时器的相关代码
+        gameStartTime = Time.time;
+        gameStarted = false;
+        gameEnded = false;
+        endGameText.gameObject.SetActive(false); // 初始时隐藏游戏结束文本
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (headRigidbody != null)
+        {
+            // 计算新的头部位置，并使用MovePosition更新
+            Vector3 newHeadPosition = transform.position + headOffset;
+            headRigidbody.MovePosition(newHeadPosition);
+        }
         // 执行主线程任务
         while (tasks.TryDequeue(out var task))
         {
@@ -93,10 +119,37 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
+        // 计时器和游戏结束相关代码
+        if (!gameEnded)
+        {
+            float currentTime = Time.time - gameStartTime;
+            timerText.text = "Time: " + currentTime.ToString("F2");
+
+            if (coinCount >= 11)
+            {
+                gameEnded = true;
+                gameEndTime = Time.time;
+                float totalDuration = gameEndTime - gameStartTime;
+                float moveDuration = gameEndTime - (gameStarted ? firstMoveTime : gameStartTime);
+                endGameText.text = "游戏结束\n总时长: " + totalDuration.ToString("F2") + " 秒\n移动任务时长: " + moveDuration.ToString("F2") + " 秒";
+                endGameText.gameObject.SetActive(true);
+            }
+        }
     }
 
     void FixedUpdate()
     {
+        // 计时器代码
+        if (currentMode == ControlMode.Manual && !gameStarted)
+        {
+            if (!isGestureControl && (Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0) ||
+                (isGestureControl && (h != 0 || v != 0)))
+            {
+                firstMoveTime = Time.time;
+                gameStarted = true;
+            }
+        }
+
         if (currentMode == ControlMode.Manual && !isGestureControl)
         {
             // 键盘控制
