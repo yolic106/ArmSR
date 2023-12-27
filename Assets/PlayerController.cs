@@ -7,6 +7,7 @@ using System.Threading;
 using UnityEngine.UI; // 引入UI命名空间
 using System.Collections.Concurrent; // 引入并发集合命名空间
 
+
 public class PlayerController : MonoBehaviour
 {
     // 玩家控制相关变量
@@ -50,6 +51,9 @@ public class PlayerController : MonoBehaviour
     private bool gameEnded;
     public Text timerText; // 链接到UI上显示计时器的Text组件
     public Text endGameText; // 链接到UI上显示游戏结束信息的Text组件
+    public Text activateText;
+    private float startControlTime = 0f;
+    private bool isStartingControl = false;
 
 
     // Start is called before the first frame update
@@ -158,13 +162,47 @@ public class PlayerController : MonoBehaviour
 
             Vector3 force = new Vector3(h, 0, v);
             force *= speed;
-            rb.AddForce(force);
+            if (!isStartingControl)
+            {
+                startControlTime = Time.time;
+                isStartingControl = true;
+                // 在此添加显示开始操纵提示的逻辑，例如更新UI Text
+                activateText.text="3秒后启动...";
+            }
+            // 如果等待时间超过3秒，则允许机器人活动
+            if (Time.time - startControlTime >= 3f)
+            {
+                rb.AddForce(force);
+                activateText.text = "活动中...";
+            }
+            else
+            {
+                rb.AddForce(0,0,0); // 在等待时间内保持静止
+            }
+            
         }
         else if (currentMode == ControlMode.Manual && isGestureControl)
         {
-            Vector3 force = new Vector3(h, 0, v);
-            force *= handSpeed;
-            rb.AddForce(force);
+            Vector3 velocity = new Vector3(h, 0, v);
+            velocity *= (-handSpeed);
+            if (!isStartingControl)
+            {
+                startControlTime = Time.time;
+                isStartingControl = true;
+                // 在此添加显示开始操纵提示的逻辑，例如更新UI Text
+                activateText.text = "3秒后启动...";
+            }
+            // 如果等待时间超过3秒，则允许机器人活动
+            if (Time.time - startControlTime >= 3f)
+            {
+                rb.velocity = velocity;
+                activateText.text = "活动中...";
+            }
+            else
+            {
+                rb.velocity = Vector3.zero; // 在等待时间内保持静止 // 在等待时间内保持静止
+            }
+            
         }
     }
 
